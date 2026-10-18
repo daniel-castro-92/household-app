@@ -1,0 +1,806 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#00875F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="מאזן הבית">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="robots" content="noindex,nofollow">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>מאזן הבית</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Frank+Ruhl+Libre:wght@500;700&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#EDF0EE; --surface:#FFFFFF; --surface-2:#F4F7F5;
+  --ink:#0F1A18; --ink-2:#33403D; --muted:#69807B;
+  --line:#DCE4E0; --line-strong:#C6D2CD;
+  --accent:#00875F; --accent-ink:#FFFFFF; --accent-soft:#DDEFE7;
+  --over:#C0442C; --over-soft:#F8E3DE;
+  --s1:#00875F; --s2:#2a78d6;
+  --shadow:0 1px 2px rgba(15,26,24,.06), 0 8px 24px rgba(15,26,24,.06);
+  --radius:16px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#0D1211; --surface:#171E1D; --surface-2:#1E2726;
+    --ink:#E9F0ED; --ink-2:#C2CFCB; --muted:#8FA29D; --line:#263130; --line-strong:#33413F;
+    --accent:#26977F; --accent-ink:#04120E; --accent-soft:#12322B;
+    --over:#E27A62; --over-soft:#3A1E18;
+    --s1:#26977F; --s2:#4A86E0;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#0D1211; --surface:#171E1D; --surface-2:#1E2726;
+  --ink:#E9F0ED; --ink-2:#C2CFCB; --muted:#8FA29D; --line:#263130; --line-strong:#33413F;
+  --accent:#26977F; --accent-ink:#04120E; --accent-soft:#12322B;
+  --over:#E27A62; --over-soft:#3A1E18;
+  --s1:#26977F; --s2:#4A86E0;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink); direction:rtl;
+  font-family:"Assistant", "Segoe UI", system-ui, sans-serif; font-size:15px; line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+}
+button{font:inherit; color:inherit; background:none; border:0; cursor:pointer}
+input{font:inherit}
+.num{font-variant-numeric:tabular-nums; direction:ltr; unicode-bidi:isolate}
+.display{font-family:"Frank Ruhl Libre", Georgia, serif; font-weight:700; letter-spacing:-.01em}
+
+/* ---------- shell ---------- */
+.shell{
+  max-width:460px; margin:0 auto; min-height:100%;
+  background:var(--bg); display:flex; flex-direction:column;
+  position:relative;
+}
+@media (min-width:900px){
+  body{background:var(--surface-2)}
+  .shell{box-shadow:var(--shadow); border-inline:1px solid var(--line)}
+}
+.topbar{
+  position:sticky; top:env(safe-area-inset-top, 0px); z-index:20;
+  background:color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter:saturate(1.2) blur(8px);
+  border-bottom:1px solid var(--line);
+  padding:10px 16px 8px;
+}
+.brandrow{display:flex; align-items:baseline; justify-content:space-between; gap:12px}
+.brand{font-family:"Frank Ruhl Libre",Georgia,serif; font-weight:700; font-size:19px; letter-spacing:-.01em}
+.brand span{color:var(--accent)}
+.synced{font-size:11.5px; color:var(--muted)}
+.months{display:flex; gap:6px; margin-top:9px; overflow-x:auto; scrollbar-width:none; padding-bottom:2px}
+.months::-webkit-scrollbar{display:none}
+.mpill{
+  flex:0 0 auto; padding:6px 13px; border-radius:999px; font-size:13.5px; font-weight:600;
+  color:var(--ink-2); background:var(--surface); border:1px solid var(--line); white-space:nowrap;
+}
+.mpill[aria-pressed="true"]{background:var(--accent); color:var(--accent-ink); border-color:var(--accent)}
+main{flex:1; padding:14px 16px 96px}
+.screen{display:flex; flex-direction:column; gap:14px}
+
+/* ---------- cards ---------- */
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:16px}
+.card.flat{box-shadow:none}
+.card-h{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:12px}
+.card-h h2{margin:0; font-size:14px; font-weight:700; letter-spacing:.02em; color:var(--ink)}
+.link{font-size:13px; color:var(--accent); font-weight:600}
+.sub{font-size:12.5px; color:var(--muted)}
+.eyebrow{font-size:11.5px; font-weight:600; letter-spacing:.08em; color:var(--muted)}
+
+/* ---------- hero ---------- */
+.hero{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:18px 16px 16px; box-shadow:var(--shadow)}
+.hero-top{display:flex; align-items:flex-end; justify-content:space-between; gap:10px}
+.hero-num{font-family:"Frank Ruhl Libre",Georgia,serif; font-weight:700; font-size:40px; line-height:1.05; letter-spacing:-.02em}
+.hero-of{font-size:13px; color:var(--muted); margin-top:4px}
+.verdict{font-size:12.5px; font-weight:700; padding:5px 10px; border-radius:999px; white-space:nowrap}
+.verdict.ok{background:var(--accent-soft); color:var(--accent)}
+.verdict.over{background:var(--over-soft); color:var(--over)}
+
+.track{position:relative; height:12px; border-radius:999px; background:var(--surface-2); border:1px solid var(--line); margin:16px 0 8px; overflow:visible}
+.track-fill{position:absolute; inset-block:0; inset-inline-start:0; border-radius:999px; background:var(--accent)}
+.track-fill.over{background:var(--over)}
+.track-over{position:absolute; inset-block:0; inset-inline-start:0; border-radius:999px; background:repeating-linear-gradient(135deg, var(--over) 0 5px, color-mix(in srgb, var(--over) 65%, #000) 5px 10px)}
+.pace{position:absolute; top:-5px; bottom:-5px; width:2px; background:var(--ink-2); border-radius:2px}
+.pace::after{content:""; position:absolute; top:-3px; inset-inline-start:-2px; width:6px; height:6px; border-radius:50%; background:var(--ink-2)}
+.trackfoot{display:flex; justify-content:space-between; font-size:12px; color:var(--muted); gap:8px}
+
+.stats{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:14px}
+.stat{background:var(--surface-2); border:1px solid var(--line); border-radius:12px; padding:10px}
+.stat .k{font-size:11px; color:var(--muted); line-height:1.3}
+.stat .v{font-family:"Frank Ruhl Libre",Georgia,serif; font-weight:700; font-size:18px; margin-top:3px}
+.stat .v small{font-size:11px; font-weight:400; font-family:"Assistant",sans-serif; color:var(--muted)}
+
+/* ---------- category bars ---------- */
+.bars{display:flex; flex-direction:column; gap:2px}
+.bar{display:block; width:100%; text-align:start; padding:9px 8px; border-radius:10px; border:1px solid transparent}
+.bar:hover,.bar:focus-visible{background:var(--surface-2); border-color:var(--line)}
+.bar-top{display:flex; align-items:baseline; justify-content:space-between; gap:10px}
+.bar-name{font-size:14px; font-weight:600}
+.bar-val{font-size:13.5px; color:var(--ink-2)}
+.bar-track{height:8px; border-radius:999px; background:var(--surface-2); margin-top:7px; overflow:hidden}
+.bar-fill{height:100%; border-radius:999px; background:var(--accent)}
+.bar-fill.fixed{background:var(--s2)}
+.bar-fill.overb{background:var(--over)}
+.c-over{color:var(--over)}
+.c-ok{color:var(--accent)}
+
+/* changes card */
+.changes{display:flex; flex-direction:column; gap:2px}
+.change{display:flex; align-items:center; gap:10px; width:100%; text-align:start; padding:9px 8px; border-radius:10px; border:1px solid transparent}
+.change:hover,.change:focus-visible{background:var(--surface-2); border-color:var(--line)}
+.chg-arrow{font-size:12px; width:22px; height:22px; border-radius:7px; display:grid; place-items:center; flex:0 0 auto}
+.chg-arrow.up{background:var(--over-soft); color:var(--over)}
+.chg-arrow.down{background:var(--accent-soft); color:var(--accent)}
+.chg-main{flex:1; min-width:0}
+.chg-name{display:block; font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.chg-sub{display:block; font-size:11.5px; color:var(--muted)}
+.chg-amt{font-size:14px; font-weight:700; white-space:nowrap}
+
+/* budget editor */
+.budgetbox{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  background:var(--surface-2); border:1px solid var(--line); border-radius:12px; padding:12px; margin:14px 0 4px}
+.budgetedit{display:flex; gap:6px}
+.budgetedit input{width:92px; padding:8px 10px; border:1px solid var(--line-strong); border-radius:9px; background:var(--surface); color:var(--ink); text-align:center}
+.btn{padding:8px 14px; border-radius:9px; background:var(--accent); color:var(--accent-ink); font-weight:700; font-size:13.5px}
+.bar-meta{display:flex; gap:8px; align-items:center; margin-top:5px; font-size:11.5px; color:var(--muted)}
+.delta{font-weight:700}
+.delta.up{color:var(--over)}
+.delta.down{color:var(--accent)}
+
+/* ---------- transactions ---------- */
+.txlist{display:flex; flex-direction:column}
+.daysep{font-size:11.5px; color:var(--muted); padding:10px 4px 6px; font-weight:600}
+.tx{display:flex; align-items:center; gap:10px; width:100%; text-align:start; padding:10px 8px; border-radius:12px; border:1px solid transparent}
+.tx:hover,.tx:focus-visible{background:var(--surface-2); border-color:var(--line)}
+.tx + .tx{border-top:1px solid var(--line); border-radius:12px}
+.tx-dot{flex:0 0 auto; width:34px; height:34px; border-radius:11px; background:var(--accent-soft); color:var(--accent);
+  display:grid; place-items:center; font-size:13px; font-weight:700; font-family:"Frank Ruhl Libre",Georgia,serif}
+.tx-main{flex:1; min-width:0}
+.tx-name{font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.tx-sub{font-size:11.5px; color:var(--muted); display:flex; gap:6px; align-items:center; flex-wrap:wrap}
+.tx-amt{font-size:14.5px; font-weight:700; white-space:nowrap}
+.tag{font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:6px; background:var(--surface-2); color:var(--ink-2); border:1px solid var(--line)}
+.tag.inst{background:var(--accent-soft); color:var(--accent); border-color:transparent}
+.tag.once{background:var(--over-soft); color:var(--over); border-color:transparent}
+
+/* ---------- months chart ---------- */
+.mchart{display:flex; align-items:flex-end; gap:10px; height:170px; padding-top:20px; position:relative}
+.budgetline{position:absolute; inset-inline:0; border-top:2px dashed var(--line-strong)}
+.budgetline span{position:absolute; inset-inline-end:0; top:-16px; font-size:10.5px; color:var(--muted); background:var(--surface); padding-inline:4px}
+.mcol{flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:6px; height:100%}
+.mbar{width:100%; max-width:46px; border-radius:6px 6px 4px 4px; background:var(--accent); position:relative}
+.mbar.dim{background:color-mix(in srgb, var(--accent) 35%, var(--surface-2))}
+.mbar.over{background:var(--over)}
+.mval{font-size:11.5px; font-weight:700; color:var(--ink-2)}
+.mlab{font-size:11.5px; color:var(--muted)}
+
+/* ---------- stacked fixed/variable ---------- */
+.stack-row{display:grid; grid-template-columns:52px 1fr; align-items:center; gap:10px; padding:7px 0}
+.stackwrap{background:var(--surface-2); border-radius:6px}
+.stack{display:flex; height:22px; border-radius:6px; overflow:hidden; gap:2px}
+.seg{height:100%; display:grid; place-items:center; font-size:11px; font-weight:700; color:#fff; min-width:2px}
+.seg.v{background:var(--s1)}
+.seg.f{background:var(--s2)}
+.legend{display:flex; gap:14px; font-size:12px; color:var(--ink-2); margin-top:10px}
+.legend i{width:10px; height:10px; border-radius:3px; display:inline-block; margin-inline-end:5px}
+
+/* ---------- comparison table ---------- */
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse; width:100%; font-size:12.5px; table-layout:fixed}
+table col.c-name{width:40%}
+table col.c-num{width:20%}
+th,td{padding:8px 4px; text-align:start; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+th{font-size:11px; color:var(--muted); font-weight:600; border-bottom:1px solid var(--line)}
+td{border-bottom:1px solid var(--line)}
+tbody tr:last-child td{border-bottom:0}
+td.n{text-align:end}
+
+/* ---------- search & chips ---------- */
+.search{display:flex; align-items:center; gap:8px; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:10px 12px}
+.search input{flex:1; border:0; background:none; outline:none; color:var(--ink); min-width:0}
+.chips{display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; padding-bottom:2px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto; padding:6px 12px; border-radius:999px; font-size:13px; font-weight:600; background:var(--surface); border:1px solid var(--line); color:var(--ink-2)}
+.chip[aria-pressed="true"]{background:var(--ink); color:var(--bg); border-color:var(--ink)}
+
+/* ---------- tab bar ---------- */
+.tabbar{
+  position:fixed; bottom:0; inset-inline:0; z-index:30;
+  margin:0 auto; max-width:460px;
+  display:grid; grid-template-columns:repeat(4,1fr);
+  background:color-mix(in srgb, var(--surface) 94%, transparent);
+  backdrop-filter:blur(10px) saturate(1.2);
+  border-top:1px solid var(--line);
+  padding:8px 6px calc(8px + env(safe-area-inset-bottom, 0px));
+}
+.tab{display:flex; flex-direction:column; align-items:center; gap:3px; padding:4px 0; color:var(--muted); font-size:11px; font-weight:600; border-radius:10px}
+.tab svg{width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round}
+.tab[aria-selected="true"]{color:var(--accent)}
+
+/* ---------- sheet ---------- */
+.backdrop{position:fixed; inset:0; background:rgba(8,16,14,.45); z-index:40; display:grid; align-items:end; justify-items:center}
+.backdrop[hidden], .screen[hidden]{display:none !important}
+.sheet{
+  width:100%; max-width:460px; background:var(--surface); border-radius:20px 20px 0 0;
+  padding:8px 16px calc(20px + env(safe-area-inset-bottom, 0px)); max-height:82vh; overflow-y:auto;
+  box-shadow:0 -10px 40px rgba(0,0,0,.28);
+  animation:rise .22s ease-out;
+}
+@keyframes rise{from{transform:translateY(18px); opacity:.6} to{transform:none; opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet{animation:none}}
+.grab{width:38px; height:4px; border-radius:99px; background:var(--line-strong); margin:6px auto 12px}
+.sheet h3{margin:0 0 2px; font-family:"Frank Ruhl Libre",Georgia,serif; font-size:20px}
+.catgrid{display:flex; flex-wrap:wrap; gap:7px; margin-top:12px}
+.catpick{padding:7px 12px; border-radius:999px; border:1px solid var(--line); background:var(--surface-2); font-size:13px; font-weight:600}
+.catpick[aria-pressed="true"]{background:var(--accent); color:var(--accent-ink); border-color:var(--accent)}
+.toast{
+  position:fixed; bottom:calc(84px + env(safe-area-inset-bottom, 0px)); inset-inline:0; margin:0 auto; width:max-content; max-width:88%;
+  background:var(--ink); color:var(--bg); padding:10px 16px; border-radius:999px; font-size:13px; font-weight:600; z-index:50;
+  box-shadow:var(--shadow);
+}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+</style>
+</head>
+<body>
+
+
+<div class="shell">
+  <header class="topbar">
+    <div class="brandrow">
+      <div class="brand">מאזן <span>הבית</span></div>
+      <div class="synced" id="synced"></div>
+    </div>
+    <div class="months" id="months" role="group" aria-label="בחירת חודש"></div>
+  </header>
+
+  <main>
+    <section class="screen" id="s-home"></section>
+    <section class="screen" id="s-cats" hidden></section>
+    <section class="screen" id="s-months" hidden></section>
+    <section class="screen" id="s-tx" hidden></section>
+  </main>
+
+  <nav class="tabbar" role="tablist" aria-label="ניווט">
+    <button class="tab" role="tab" data-tab="home" aria-selected="true">
+      <svg viewBox="0 0 24 24"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10.5V20h12v-9.5"/></svg>החודש
+    </button>
+    <button class="tab" role="tab" data-tab="cats" aria-selected="false">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4v8l5.5 3.2"/></svg>קטגוריות
+    </button>
+    <button class="tab" role="tab" data-tab="months" aria-selected="false">
+      <svg viewBox="0 0 24 24"><path d="M5 19V9"/><path d="M12 19V5"/><path d="M19 19v-7"/></svg>מגמות
+    </button>
+    <button class="tab" role="tab" data-tab="tx" aria-selected="false">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>עסקאות
+    </button>
+  </nav>
+</div>
+
+<div class="backdrop" id="backdrop" hidden>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
+</div>
+
+<script>
+/* ---------------- live data (Apps Script API) ---------------- */
+const API_URL = 'https://script.google.com/macros/s/AKfycbxA6A7U9oqxdxEswDWt3Dj8XCUa6Brz3uEm8_aF-D5s01h1SuPQxAhLRESns52FhTYZ/exec';
+let ROWS = [], CATS = [];
+let syncedAt = null, syncing = false;
+const store = {
+  get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k,v); } catch(e){} }
+};
+(function takeKeyFromLink(){
+  const m = location.hash.match(/[#&]k=([A-Za-z0-9_-]+)/);
+  if (m){ store.set('hk', m[1]); history.replaceState(null, '', location.pathname + location.search); }
+})();
+const getKey = () => store.get('hk');
+
+async function api(body){
+  const key = getKey();
+  const res = body
+    ? await fetch(API_URL, {method:'POST', body: JSON.stringify({key, ...body}), headers:{'Content-Type':'text/plain;charset=utf-8'}})
+    : await fetch(API_URL + '?key=' + encodeURIComponent(key));
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || 'שגיאה');
+  return data;
+}
+function accept(data){
+  store.set('hd', JSON.stringify(data));
+  syncedAt = new Date(data.updated);
+  ingest(data);
+}
+async function refresh(manual){
+  if (syncing || !getKey()) return;
+  syncing = true; setSyncLabel();
+  try { accept(await api()); renderAll(); if (manual) toast('הנתונים עודכנו'); }
+  catch(e){ if (manual) toast('לא הצלחתי להתעדכן · מוצגים הנתונים האחרונים'); }
+  syncing = false; setSyncLabel();
+}
+function setSyncLabel(){
+  const n = document.getElementById('synced'); if (!n) return;
+  if (syncing){ n.textContent = 'מסתנכרן…'; return; }
+  if (!syncedAt){ n.textContent = ''; return; }
+  const mins = Math.round((Date.now() - syncedAt.getTime()) / 60000);
+  n.textContent = 'עודכן ' + (mins < 1 ? 'הרגע' : mins < 60 ? `לפני ${mins} דק׳` : mins < 1440 ? `לפני ${Math.round(mins/60)} שע׳` : dayLabel(syncedAt.toISOString().slice(0,10)));
+}
+
+/* ---------------- model ---------------- */
+const F = (n, dec = 0) => '₪' + Number(n).toLocaleString('he-IL', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+const BUDGET = 28000;
+const TODAY = new Date();
+
+let tx = [];
+let MONTHS = [];
+const monthLabel = m => {
+  const [y, mo] = m.split('-').map(Number);
+  return new Intl.DateTimeFormat('he-IL', {month:'long'}).format(new Date(y, mo-1, 1));
+};
+const monthLabelFull = m => monthLabel(m) + ' ' + m.split('-')[0];
+const isCurrent = m => m === `${TODAY.getFullYear()}-${String(TODAY.getMonth()+1).padStart(2,'0')}`;
+const daysIn = m => { const [y,mo] = m.split('-').map(Number); return new Date(y, mo, 0).getDate(); };
+const elapsed = m => isCurrent(m) ? TODAY.getDate() : daysIn(m);
+
+/* budgets come from the "categories" tab; empty today, editable here */
+const state = {
+  month: null,
+  tab:'home', q:'', filter:'all', catOverrides:{}, budgets:{}
+};
+
+const UNCAT = 'ללא קטגוריה';
+function ingest(data){
+  ROWS = data.rows || []; CATS = data.cats || [];
+  if (!CATS.some(c => c[0] === UNCAT)) CATS = CATS.concat([[UNCAT, 'אחר', '']]);
+  tx = ROWS.map((r, i) => ({
+    id:i, date:r[0], month:r[1], cat:r[2] || UNCAT, group:r[2] ? r[3] : 'אחר', merchant:r[4],
+    amt:Number(r[5]), account:r[6], note:r[7]||'', oneoff:r[8]==='חד פעמי', fixed:r[9]==='קבוע'
+  }));
+  MONTHS = [...new Set(tx.map(t => t.month))].sort();
+  state.budgets = Object.fromEntries(CATS.filter(c => c[2]).map(c => [c[0], Number(c[2])]));
+  state.catOverrides = {};
+  const def = [...MONTHS].reverse().find(m => isCurrent(m) || ROWS.filter(r => r[1] === m).length >= 5) || MONTHS[MONTHS.length-1];
+  if (!state.month || !MONTHS.includes(state.month)) state.month = def;
+}
+const budgetOf = name => state.budgets[name] || null;
+const catOf = t => state.catOverrides[t.id] || t.cat;
+const inMonth = m => tx.filter(t => t.month === m);
+const sum = a => a.reduce((s,t) => s + t.amt, 0);
+const byCat = list => {
+  const m = new Map();
+  list.forEach(t => m.set(catOf(t), (m.get(catOf(t))||0) + t.amt));
+  return [...m.entries()].sort((a,b) => b[1]-a[1]);
+};
+const prevMonth = m => MONTHS[MONTHS.indexOf(m)-1];
+
+/* ---------------- helpers ---------------- */
+const el = (tag, cls, html) => { const n = document.createElement(tag); if(cls) n.className = cls; if(html != null) n.innerHTML = html; return n; };
+const instOf = t => { const m = t.note.match(/(\d+)\s*מתוך\s*(\d+)/); return m ? `תשלום ${m[1]}/${m[2]}` : null; };
+function deltaHTML(val, prev, prevName){
+  if (prev == null) return `<span>חדש החודש</span>`;
+  const d = (val - prev) / prev * 100;
+  if (Math.abs(d) < 1) return `<span>ללא שינוי מול ${prevName}</span>`;
+  return `<span class="delta ${d>0?'up':'down'}">${d>0?'▲':'▼'} ${Math.abs(Math.round(d))}%</span><span>מול ${prevName}</span>`;
+}
+const initials = s => (s||'').replace(/["']/g,'').trim().slice(0,2);
+const dayLabel = d => {
+  const dt = new Date(d + 'T12:00');
+  return new Intl.DateTimeFormat('he-IL', {weekday:'long', day:'numeric', month:'long'}).format(dt);
+};
+
+/* ---------------- home ---------------- */
+const BIG_EXCLUDE = ['שכר דירה / משכנתא','ועד בית','גן','חשבונות'];
+const cumToDay = (m, day) => sum(inMonth(m).filter(t => Number(t.date.slice(8,10)) <= day));
+
+function categoryBar({name, val, prev, prevName, meta, totalForPct, fixedCat}){
+  const b = el('button','bar');
+  const budget = budgetOf(name);
+  const pctOfBudget = budget ? Math.min(val / budget, 1) * 100 : null;
+  const overB = budget && val > budget;
+  b.innerHTML = `
+    <div class="bar-top"><span class="bar-name">${name}</span><span class="bar-val num">${F(val)}</span></div>
+    <div class="bar-track"><div class="bar-fill ${overB ? 'overb' : (fixedCat ? 'fixed' : '')}" style="width:${budget ? pctOfBudget : (val/(meta.max||1)*100)}%"></div></div>
+    <div class="bar-meta">
+      ${budget
+        ? `<span class="${overB?'delta up':''}">${overB ? 'חריגה ' + F(val-budget) : F(budget-val) + ' נותרו'} מתקציב ${F(budget)}</span>`
+        : `<span>${Math.round(val/(totalForPct||1)*100)}% מההוצאה</span>`}
+      ${prevName ? deltaHTML(val, prev, prevName) : ''}
+    </div>`;
+  b.onclick = () => openCat(name);
+  return b;
+}
+
+function renderHome(){
+  const host = document.getElementById('s-home'); host.innerHTML = '';
+  const m = state.month, list = inMonth(m), total = sum(list);
+  const pct = Math.min(total / BUDGET, 1) * 100;
+  const over = total > BUDGET;
+  const days = daysIn(m), gone = elapsed(m), left = Math.max(days - gone, 0);
+  const pacePct = Math.min(gone / days, 1) * 100;
+  const pm = prevMonth(m);
+  const variable = sum(list.filter(t => !t.fixed));
+  const fixed = total - variable;
+
+  // like-for-like comparison: same day of month for a live month, full month otherwise
+  let cmpVal = null, cmpLabel = '';
+  if (pm){
+    if (isCurrent(m)) { cmpVal = cumToDay(pm, gone); cmpLabel = `${monthLabel(pm)} עד ה-${gone} בחודש`; }
+    else { cmpVal = sum(inMonth(pm)); cmpLabel = monthLabel(pm) + ' (חודש מלא)'; }
+  }
+  const cmpDiff = cmpVal != null ? total - cmpVal : null;
+
+  const hero = el('div','hero');
+  hero.innerHTML = `
+    <div class="eyebrow">הוצאות ${monthLabelFull(m)}</div>
+    <div class="hero-top">
+      <div>
+        <div class="hero-num num">${F(total)}</div>
+        <div class="hero-of">מתוך תקציב של <span class="num">${F(BUDGET)}</span></div>
+      </div>
+      <div class="verdict ${over?'over':'ok'}">${over ? 'חריגה ' + F(total-BUDGET) : 'נותרו ' + F(BUDGET-total)}</div>
+    </div>
+    <div class="track">
+      <div class="track-fill ${over?'over':''}" style="width:${pct}%"></div>
+      ${isCurrent(m) ? `<div class="pace" style="inset-inline-start:${pacePct}%"></div>` : ''}
+    </div>
+    <div class="trackfoot"><span>${Math.round(total/BUDGET*100)}% מהתקציב${isCurrent(m) ? ` · הנקודה = היום בחודש` : ''}</span><span>${isCurrent(m) ? `נותרו ${left} ימים` : `${days} ימים`}</span></div>
+    <div class="stats">
+      <div class="stat"><div class="k">הוצאה משתנה</div><div class="v num">${F(variable)}</div><div class="k">מה שניתן לקצץ</div></div>
+      <div class="stat"><div class="k">הוצאה קבועה</div><div class="v num">${F(fixed)}</div><div class="k">כבר חויב</div></div>
+      <div class="stat"><div class="k">${cmpVal != null ? 'מול ' + cmpLabel : 'עסקאות'}</div>
+        <div class="v num ${cmpDiff > 0 ? 'c-over' : 'c-ok'}">${cmpDiff != null ? (cmpDiff > 0 ? '+' : '−') + F(Math.abs(cmpDiff)).replace('₪','₪') : list.length}</div>
+        ${cmpVal != null ? `<div class="k num">אז: ${F(cmpVal)}</div>` : ''}</div>
+    </div>`;
+  host.appendChild(hero);
+
+  // what changed vs last month
+  if (pm){
+    const now = new Map(byCat(list)), before = new Map(byCat(inMonth(pm)));
+    const names = [...new Set([...now.keys(), ...before.keys()])];
+    const diffs = names.map(n => [n, (now.get(n)||0) - (before.get(n)||0)])
+      .filter(([,d]) => Math.abs(d) >= 50).sort((a,b) => b[1]-a[1]);
+    const up = diffs.slice(0,3), down = diffs.slice(-3).reverse().filter(d => d[1] < 0);
+    if (up.length || down.length){
+      const c = el('div','card');
+      c.innerHTML = `<div class="card-h"><h2>מה השתנה מול ${monthLabel(pm)}</h2></div>`;
+      const wrap = el('div','changes');
+      up.filter(d => d[1] > 0).forEach(([n,d]) => wrap.appendChild(changeRow(n, d, now.get(n)||0, before.get(n)||0)));
+      down.forEach(([n,d]) => wrap.appendChild(changeRow(n, d, now.get(n)||0, before.get(n)||0)));
+      c.appendChild(wrap);
+      host.appendChild(c);
+    }
+  }
+
+  const cats = byCat(list);
+  const max = cats.length ? cats[0][1] : 1;
+  const card = el('div','card');
+  card.innerHTML = `<div class="card-h"><h2>לאן הלך הכסף</h2><button class="link" data-goto="cats">הכל ותקציבים</button></div>`;
+  const bars = el('div','bars');
+  const prevMap = new Map(pm ? byCat(inMonth(pm)) : []);
+  cats.slice(0,7).forEach(([name, val]) => {
+    bars.appendChild(categoryBar({
+      name, val,
+      prev: prevMap.has(name) ? prevMap.get(name) : null,
+      prevName: pm ? monthLabel(pm) : null,
+      meta:{max}, totalForPct: total,
+      fixedCat: list.some(t => catOf(t) === name && t.fixed)
+    }));
+  });
+  card.appendChild(bars);
+  card.appendChild(el('div','legend',`<span><i style="background:var(--s1)"></i>משתנה</span><span><i style="background:var(--s2)"></i>קבוע</span>`));
+  host.appendChild(card);
+
+  const big = list.filter(t => !BIG_EXCLUDE.includes(catOf(t))).sort((a,b) => b.amt - a.amt).slice(0,5);
+  if (big.length){
+    const c = el('div','card');
+    c.innerHTML = `<div class="card-h"><h2>5 ההוצאות הגדולות</h2></div>
+      <div class="sub" style="margin:-6px 0 8px">בלי שכר דירה, ועד בית, גן וחשבונות</div>`;
+    const l = el('div','txlist');
+    big.forEach(t => l.appendChild(txRow(t)));
+    c.appendChild(l);
+    host.appendChild(c);
+  }
+
+  host.querySelectorAll('[data-goto]').forEach(b => b.onclick = () => switchTab(b.dataset.goto));
+}
+
+function changeRow(name, diff, now, before){
+  const up = diff > 0;
+  const b = el('button','change');
+  b.innerHTML = `
+    <span class="chg-arrow ${up?'up':'down'}">${up?'▲':'▼'}</span>
+    <span class="chg-main">
+      <span class="chg-name">${name}</span>
+      <span class="chg-sub num">${F(before)} ← ${F(now)}</span>
+    </span>
+    <span class="chg-amt num ${up?'c-over':'c-ok'}">${up?'+':'−'}${F(Math.abs(diff))}</span>`;
+  b.onclick = () => openCat(name);
+  return b;
+}
+
+function txRow(t){
+  const b = el('button','tx');
+  const inst = instOf(t);
+  b.innerHTML = `
+    <span class="tx-dot">${initials(t.merchant)}</span>
+    <span class="tx-main">
+      <span class="tx-name">${t.merchant}</span>
+      <span class="tx-sub">
+        <span>${catOf(t)}</span>
+        ${inst ? `<span class="tag inst">${inst}</span>` : ''}
+        ${t.oneoff ? `<span class="tag once">חד פעמי</span>` : ''}
+        ${state.catOverrides[t.id] ? `<span class="tag inst">סווג מחדש</span>` : ''}
+      </span>
+    </span>
+    <span class="tx-amt num">${F(t.amt)}</span>`;
+  b.onclick = () => openTx(t);
+  return b;
+}
+
+/* ---------------- categories ---------------- */
+function renderCats(){
+  const host = document.getElementById('s-cats'); host.innerHTML = '';
+  const m = state.month;
+  let list = inMonth(m);
+  if (state.filter === 'variable') list = list.filter(t => !t.fixed);
+  if (state.filter === 'noonce') list = list.filter(t => !t.oneoff);
+  const cats = byCat(list), total = sum(list);
+  const pm = prevMonth(m), prevMap = new Map(pm ? byCat(inMonth(pm)) : []);
+  const max = cats.length ? cats[0][1] : 1;
+
+  const chips = el('div','chips');
+  [['all','הכל'],['variable','רק משתנות'],['noonce','ללא חד-פעמי']].forEach(([k,label]) => {
+    const c = el('button','chip', label);
+    c.setAttribute('aria-pressed', state.filter === k);
+    c.onclick = () => { state.filter = k; renderCats(); };
+    chips.appendChild(c);
+  });
+  host.appendChild(chips);
+
+  const card = el('div','card');
+  card.innerHTML = `<div class="card-h"><h2>${monthLabelFull(m)}</h2><span class="sub num">${F(total)}</span></div>
+    <div class="sub" style="margin:-6px 0 10px">לחיצה על קטגוריה: פירוט העסקאות והגדרת תקציב חודשי</div>`;
+  const bars = el('div','bars');
+  cats.forEach(([name, val]) => {
+    bars.appendChild(categoryBar({
+      name, val,
+      prev: prevMap.has(name) ? prevMap.get(name) : null,
+      prevName: pm ? monthLabel(pm) : null,
+      meta:{max}, totalForPct: total,
+      fixedCat: list.some(t => catOf(t) === name && t.fixed)
+    }));
+  });
+  card.appendChild(bars);
+  host.appendChild(card);
+}
+
+/* ---------------- months / trends ---------------- */
+function renderMonths(){
+  const host = document.getElementById('s-months'); host.innerHTML = '';
+  const totals = MONTHS.map(m => [m, sum(inMonth(m))]);
+  const max = Math.max(...totals.map(t => t[1]), BUDGET) * 1.12;
+
+  const c1 = el('div','card');
+  c1.innerHTML = `<div class="card-h"><h2>סך הוצאות בכל חודש</h2><span class="sub">קו מקווקו = תקציב</span></div>`;
+  const chart = el('div','mchart');
+  chart.appendChild(el('div','budgetline','<span>28,000 ₪</span>')).style.bottom = (BUDGET/max*100) + '%';
+  totals.forEach(([m, v]) => {
+    const col = el('div','mcol');
+    col.innerHTML = `<div class="mval num">${v >= 1000 ? Math.round(v/1000) + 'K' : Math.round(v)}</div>`;
+    const bar = el('div', 'mbar' + (v > BUDGET ? ' over' : (m === state.month ? '' : ' dim')));
+    bar.style.height = Math.max(v/max*100, 1.5) + '%';
+    col.appendChild(bar);
+    col.appendChild(el('div','mlab', monthLabel(m)));
+    col.onclick = () => { state.month = m; renderAll(); switchTab('home'); };
+    chart.appendChild(col);
+  });
+  c1.appendChild(chart);
+  host.appendChild(c1);
+
+  const c2 = el('div','card');
+  c2.innerHTML = `<div class="card-h"><h2>קבוע מול משתנה</h2><span class="sub">מה באמת ניתן לקצץ</span></div>`;
+  const maxTot = Math.max(...MONTHS.map(m => sum(inMonth(m))));
+  MONTHS.slice().reverse().forEach(m => {
+    const list = inMonth(m), f = sum(list.filter(t => t.fixed)), v = sum(list.filter(t => !t.fixed)), tot = f+v;
+    if (!tot) return;
+    const row = el('div','stack-row');
+    row.innerHTML = `<span class="mlab">${monthLabel(m)}</span>
+      <span class="stackwrap"><span class="stack" style="width:${Math.max(tot/maxTot*100, 2)}%">
+        <span class="seg v" style="flex:${v}" title="משתנה ${Math.round(v)} ₪">${v/maxTot > .13 ? Math.round(v).toLocaleString('he-IL') : ''}</span>
+        <span class="seg f" style="flex:${f}" title="קבוע ${Math.round(f)} ₪">${f/maxTot > .13 ? Math.round(f).toLocaleString('he-IL') : ''}</span>
+      </span></span>`;
+    c2.appendChild(row);
+  });
+  c2.appendChild(el('div','legend',`<span><i style="background:var(--s1)"></i>משתנה</span><span><i style="background:var(--s2)"></i>קבוע</span>`));
+  host.appendChild(c2);
+
+  const c3 = el('div','card');
+  const cur = state.month, pm = prevMonth(cur);
+  const cols = (pm ? [pm, cur] : [cur]);
+  c3.innerHTML = `<div class="card-h"><h2>קטגוריה לפי חודש</h2><span class="sub">מסודר לפי ${monthLabel(cur)}</span></div>`;
+  const wrap = el('div','tablewrap');
+  const names = [...new Set(cols.flatMap(m => byCat(inMonth(m)).map(c => c[0])))];
+  const rows = names.map(n => {
+    const vals = cols.map(m => sum(inMonth(m).filter(t => catOf(t) === n)));
+    return [n, vals, vals[vals.length-1] - (vals.length > 1 ? vals[0] : 0)];
+  }).sort((a,b) => b[1][b[1].length-1] - a[1][a[1].length-1]);
+  wrap.innerHTML = `<table><colgroup><col class="c-name">${cols.map(() => '<col class="c-num">').join('')}<col class="c-num"></colgroup>
+    <thead><tr><th>קטגוריה</th>${cols.map(m => `<th class="n">${monthLabel(m)}</th>`).join('')}<th class="n">שינוי</th></tr></thead>
+    <tbody>${rows.map(([n, vals, d]) => `<tr><td>${n}</td>${vals.map(v => `<td class="n num">${v ? Math.round(v).toLocaleString('he-IL') : '–'}</td>`).join('')}
+      <td class="n num delta ${d>0?'up':'down'}">${d ? (d>0?'+':'−') + Math.abs(Math.round(d)).toLocaleString('he-IL') : '–'}</td></tr>`).join('')}</tbody></table>`;
+  c3.appendChild(wrap);
+  host.appendChild(c3);
+}
+
+/* ---------------- transactions ---------------- */
+function renderTx(){
+  const host = document.getElementById('s-tx'); host.innerHTML = '';
+  const search = el('div','search','<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--muted)"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>');
+  const input = el('input'); input.type = 'search'; input.placeholder = 'חיפוש בית עסק או קטגוריה'; input.value = state.q; input.id = 'q';
+  input.oninput = () => { state.q = input.value; drawList(); };
+  search.appendChild(input);
+  host.appendChild(search);
+
+  const card = el('div','card');
+  const listHost = el('div','txlist');
+  card.appendChild(listHost);
+  host.appendChild(card);
+
+  function drawList(){
+    listHost.innerHTML = '';
+    const q = state.q.trim();
+    let list = inMonth(state.month);
+    if (q) list = tx.filter(t => (t.merchant + ' ' + catOf(t) + ' ' + t.note).includes(q));
+    if (!list.length){ listHost.appendChild(el('div','sub','לא נמצאו עסקאות.')); return; }
+    let day = null;
+    list.forEach(t => {
+      if (t.date !== day){ day = t.date; listHost.appendChild(el('div','daysep', dayLabel(t.date))); }
+      listHost.appendChild(txRow(t));
+    });
+  }
+  drawList();
+}
+
+/* ---------------- sheets ---------------- */
+const backdrop = document.getElementById('backdrop'), sheet = document.getElementById('sheet');
+backdrop.onclick = e => { if (e.target === backdrop) closeSheet(); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+function closeSheet(){ backdrop.hidden = true; sheet.innerHTML = ''; }
+
+function openCat(name){
+  const list = inMonth(state.month).filter(t => catOf(t) === name);
+  const total = sum(list);
+  const budget = budgetOf(name);
+  sheet.innerHTML = `<div class="grab"></div>
+    <h3>${name}</h3>
+    <div class="sub">${monthLabelFull(state.month)} · <span class="num">${F(total)}</span> · ${list.length} עסקאות</div>
+    <div class="budgetbox">
+      <div>
+        <div class="eyebrow">תקציב חודשי</div>
+        <div class="sub">${budget ? `<span class="num">${F(total)}</span> מתוך <span class="num">${F(budget)}</span>` : 'לא הוגדר'}</div>
+      </div>
+      <div class="budgetedit">
+        <input type="number" inputmode="numeric" id="bInput" placeholder="₪" value="${budget||''}">
+        <button class="btn" id="bSave">שמירה</button>
+      </div>
+    </div>`;
+  const l = el('div','txlist');
+  list.sort((a,b) => b.amt - a.amt).forEach(t => l.appendChild(txRow(t)));
+  sheet.appendChild(l);
+  sheet.querySelector('#bSave').onclick = () => {
+    const v = Number(sheet.querySelector('#bInput').value);
+    if (v > 0) state.budgets[name] = v; else delete state.budgets[name];
+    closeSheet(); renderAll();
+    toast(v > 0 ? `תקציב ${F(v)} ל־${name} נשמר` : `התקציב ל־${name} הוסר`);
+    api({action:'setBudget', category:name, amount: v > 0 ? v : ''})
+      .then(d => { accept(d); renderAll(); })
+      .catch(() => toast('השמירה לגיליון נכשלה · נסו שוב'));
+  };
+  backdrop.hidden = false;
+}
+
+function openTx(t){
+  const inst = instOf(t);
+  sheet.innerHTML = `<div class="grab"></div>
+    <h3>${t.merchant}</h3>
+    <div class="sub">${dayLabel(t.date)} · כרטיס ${t.account} ${inst ? '· ' + inst : ''}</div>
+    <div class="hero-num num" style="font-size:30px; margin:10px 0 2px">${F(t.amt, 2)}</div>
+    ${t.note ? `<div class="sub" style="margin-bottom:6px">${t.note}</div>` : ''}
+    ${t.month !== t.date.slice(0,7) ? `<div class="sub">משויך לחיוב של ${monthLabelFull(t.month)}</div>` : ''}
+    <div class="eyebrow" style="margin-top:16px">סיווג</div>`;
+  const grid = el('div','catgrid');
+  const current = catOf(t);
+  const options = [...new Set([current, ...CATS.map(c => c[0])])];
+  options.forEach(name => {
+    const b = el('button','catpick', name);
+    b.setAttribute('aria-pressed', name === current);
+    b.onclick = () => {
+      const hadCat = t.cat !== UNCAT;
+      state.catOverrides[t.id] = name;
+      closeSheet(); renderAll();
+      toast(`«${t.merchant}» סווג ל־${name}`);
+      api({action:'setCategory', merchant:t.merchant, category:name, overwrite:hadCat})
+        .then(d => { accept(d); renderAll(); })
+        .catch(() => toast('השמירה לגיליון נכשלה · נסו שוב'));
+    };
+    grid.appendChild(b);
+  });
+  sheet.appendChild(grid);
+  backdrop.hidden = false;
+}
+
+let toastTimer;
+function toast(msg){
+  document.querySelectorAll('.toast').forEach(n => n.remove());
+  const t = el('div','toast', msg);
+  document.body.appendChild(t);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.remove(), 3600);
+}
+
+/* ---------------- chrome ---------------- */
+function renderMonthPills(){
+  const host = document.getElementById('months'); host.innerHTML = '';
+  MONTHS.slice().reverse().forEach(m => {
+    const b = el('button','mpill', monthLabel(m) + (isCurrent(m) ? ' • עכשיו' : ''));
+    b.setAttribute('aria-pressed', m === state.month);
+    b.onclick = () => { state.month = m; renderAll(); };
+    host.appendChild(b);
+  });
+  setSyncLabel();
+}
+
+function switchTab(tab){
+  state.tab = tab;
+  document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === tab));
+  ['home','cats','months','tx'].forEach(t => document.getElementById('s-' + t).hidden = t !== tab);
+  window.scrollTo({top:0, behavior:'instant'});
+}
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
+
+function renderAll(){ renderMonthPills(); renderHome(); renderCats(); renderMonths(); renderTx(); }
+document.getElementById('synced').onclick = () => refresh(true);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refresh(false); });
+setInterval(setSyncLabel, 30000);
+setInterval(() => { if (document.visibilityState === 'visible') refresh(false); }, 10 * 60 * 1000);
+
+function boot(){
+  const cached = store.get('hd');
+  if (cached){ try { accept(JSON.parse(cached)); } catch(e){} }
+  if (!getKey()){
+    document.querySelector('main').innerHTML = `<div class="sub" style="padding:40px 24px;text-align:center;line-height:1.7">
+      כדי להתחבר פתחו את הקישור המלא שקיבלתם (כולל החלק שאחרי #).<br>המפתח נשמר במכשיר הזה בלבד.</div>`;
+    return;
+  }
+  if (tx.length){ renderAll(); }
+  else document.getElementById('s-home').innerHTML = '<div class="sub" style="padding:40px 24px;text-align:center">טוען נתונים…</div>';
+  switchTab('home');
+  refresh(false).then(() => {
+    if (!tx.length) document.getElementById('s-home').innerHTML = '<div class="sub" style="padding:40px 24px;text-align:center;line-height:1.7">לא הצלחתי לטעון נתונים.<br>בדקו חיבור, ואם זה נמשך — ייתכן שהמפתח שגוי.</div>';
+  });
+}
+boot();
+
+if ('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloaded || !navigator.serviceWorker.controller) return;
+    reloaded = true;
+  });
+}
+</script>
+
+</body>
+</html>
